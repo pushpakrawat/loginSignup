@@ -2,15 +2,28 @@ import React, { useState, useEffect } from "react";
 import { View, Text, StyleSheet } from "react-native";
 import { FIREBASE_DB } from "../../firebase/firebaseconfig";
 import { getDoc, doc, updateDoc } from "firebase/firestore";
+import { toggleThemeColors } from "../../redux/actions/appActions";
 import { Switch } from "react-native-paper";
+import { light, dark } from "./themeColors";
+import { useSelector, useDispatch } from "react-redux";
 
 const ThemeSwitch = () => {
   const [themeMode, setThemeMode] = useState(null);
   const [initialFetchDone, setInitialFetchDone] = useState(false);
-  const userId = "VtxzLHQ2jc3aro8Dg2Fy"; // Replace with your specific user ID
+  const userId = "VtxzLHQ2jc3aro8Dg2Fy";
+  const dispatch = useDispatch();
+  const themeColorRedux = useSelector((state) => state.app.themeColors);
+  console.log("ThemeColors fetched from redux:", themeColorRedux);
+
+  const updateThemeColorsToRedux = (themeMode) => {
+    console.log("themeMode to update function: ", themeMode)
+    const themeColors = themeMode === "light" ? light : dark;
+    console.log("themeColors to redux:", themeColors);
+    dispatch(toggleThemeColors(themeColors));
+
+  }
 
   useEffect(() => {
-    // Fetch theme value from Firestore for a specific user when the component mounts
     const fetchThemeMode = async () => {
       try {
         const userDocRef = doc(FIREBASE_DB, "users", userId);
@@ -18,10 +31,12 @@ const ThemeSwitch = () => {
 
         if (userDocSnapshot.exists()) {
           const userData = userDocSnapshot.data();
-          setThemeMode(userData.themeMode);
           console.log("Fetched theme from Firestore:", userData.themeMode);
+          setThemeMode(userData.themeMode);
+          
+          //updating themeColors to redux
+          updateThemeColorsToRedux(userData.themeMode);
         }
-
         setInitialFetchDone(true);
       } catch (error) {
         console.error("Error fetching Firestore document:", error);
@@ -48,6 +63,8 @@ const ThemeSwitch = () => {
     setThemeMode((prevThemeMode) => {
       const newThemeMode = prevThemeMode === "light" ? "dark" : "light";
       console.log("Toggled switch. New theme mode:", newThemeMode);
+      
+      updateThemeColorsToRedux(newThemeMode);
 
       // Only update Firestore if initial fetch is complete
       if (initialFetchDone) {
@@ -66,7 +83,6 @@ const ThemeSwitch = () => {
       </View>
     );
   }
-
 
   return (
     <View style={styles.container}>
